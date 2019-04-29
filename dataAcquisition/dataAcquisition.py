@@ -20,14 +20,13 @@ def main():
     packets_amount = 0
 
     # Features to be written to the output file
+    # [0] - IPv4 packets sum length
 	# [1] - Number of ARP packets
 	# [2] - Number of TCP packets (IPv4)
 	# [3] - Number of UDP packets (IPv4)
 	# [4] - Number of other packets (IPv4)
-	# [5] - IPv4 packets number (from pcs_ip to another_pcs_ip)
-	# [7] - IPv4 packets number (from hosts_ip to unknow ips)
-	# [8] - Number of DNS packets
-	# [9] - Number of ICMP packets    
+	# [5] - IPv4 packets number (from pcs_ip to pcs_ip)
+	# [6] - IPv4 packets number (from pcs_ip to unknow ips)
 
     outFile = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -308,6 +307,51 @@ def main():
                     # Update the ks
                     ks=int((float(timestamp)-T0)/interval)%window
                     print("---------------------------------------------------")
+                    print("KS : ",ks)
+                    print("Packets amount : ",packets_amount)
+
+                    # If packet is IPv4, update features
+                    if encapsulation_type == "1" and eth_type == "0x00000800":
+                        outFile[0] = outFile[0] + len(packet_length)
+                        outFile[5] += 1 #it's necessary to differentiate them.
+                        outFile[6] += 1
+					
+                        # If TCP, update features
+                        if ipv4_protocol == "6" : 
+                            outFile[2] += 1 # Count TCP packets
+                        
+                        # If UDP, update features
+                        elif ipv4_protocol == "17" : 
+                            outFile[3] += 1 # Count UDP packets
+                        
+                        # If other, update features
+                        else: 
+                            outFile[4] += 1 # Count other packets                                                  
+
+                    # If ARP, update features
+                    if encapsulation_type == "1" and eth_type=="0x00000806":
+                        # Count ARP packets
+                        outFile[1] += 1
+
+                    # If the last ks is different from the ks, update the file
+                    # Clean features and repeat until the last ks is the same
+                    if last_ks != ks and packets_amount > 0:
+                        while last_ks != ks:
+                            outF_len = len(outFile)
+
+                            for i in range(outF_len):
+                                file_obj.write(str(outFile[i])+' ')
+                                outFile[i] = 0
+                            file_obj.write('\n')
+                            
+                            external_ips_dst = []
+                            external_ips_src = []
+                            last_ks = (last_ks + 1) % window
+
+                    # Update the number of packets
+                    packets_amount += 1
+
+
     except FileNotFoundError:
         print('\nFile not found. Program finished.')
         sys.exit()
