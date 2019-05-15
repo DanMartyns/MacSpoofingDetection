@@ -38,6 +38,7 @@ def main():
     parser.add_argument('-o', '--output', nargs='?', required=True, help='output file')
     parser.add_argument('-si', '--samplingInterval', type=int, help=' time between which measurements are taken, or data is recorded (seconds)', default=1)
     parser.add_argument('-ow', '--observationWindow', type=int, help=' observation window (seconds)', default=300)
+    parser.add_argument('-in', '--interface', help=' interface where will capture packets')
     args=parser.parse_args()
 
     interval = args.samplingInterval
@@ -79,6 +80,9 @@ def main():
                 transport_layer = packet.transport_layer
                 eth = packet.eth
                 interface_captured = packet.interface_captured
+
+                print(packet_time)
+                print(timestamp)
 
                 # Get layer 1 information
 
@@ -182,6 +186,7 @@ def main():
 
                             tcp_text = tcp_all_fields.get('')
                             tcp_timestamp_tsval = tcp_all_fields.get('tcp.options.timestamp.tsval')
+                            #print("tcp_timestamp_tsval : "+tcp_timestamp_tsval)
                             tcp_flags_res = tcp_all_fields.get('tcp.flags.res')
                             tcp_flags_fin = tcp_all_fields.get('tcp.flags.fin')
                             tcp_flags_syn = tcp_all_fields.get('tcp.flags.syn')
@@ -193,6 +198,7 @@ def main():
                             tcp_window_size_value = tcp_all_fields.get('tcp.window_size_value')
                             tcp_src_port = tcp_all_fields.get('tcp.srcport')
                             tcp_timestamp_tsecr = tcp_all_fields.get('tcp.options.timestamp.tsecr')
+                            #print("tcp_timestamp_tsecr : "+tcp_timestamp_tsecr)
                             tcp_ack = tcp_all_fields.get('tcp.ack')
                             tcp_stream = tcp_all_fields.get('tcp.stream')
                             tcp_flags = tcp_all_fields.get('tcp.flags')
