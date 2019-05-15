@@ -13,7 +13,7 @@ fi
 while [ true ]; do
 	tstamp=$(($(date +%s%N)/1000000))
 	echo Writing to file "$HOSTNAME"_$1_$tstamp.pcap
-	echo Capture started at $(date +"%T"), ends at $(date -d '($duration) seconds' +"%T")
+	echo Capture started at $(date +"%T"), ends at $(date -d "$duration seconds" +"%T")
 	tshark -w "$HOSTNAME"_$1_$tstamp.pcap -a duration:$duration
 	echo
 done
