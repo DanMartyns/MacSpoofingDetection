@@ -150,20 +150,20 @@ def main():
                             if len(layers)>3 and layers[3]._layer_name=='dns':
                                 upper_layer = layers[3]
 
-                        else:
-                            print("Unrecognized transport protocol")
+                        #else:
+                            #print("Unrecognized transport protocol")
                             #print(ipv4_protocol)
                             #print(layers[2])
                     
-                    elif eth_type != None :
+                    #elif eth_type != None :
                         # https://en.wikipedia.org/wiki/EtherType
                         # eth type = Ethernet Configuration Testing Protocol
-                        print("Doesn't matter")
+                        #print("Doesn't matter")
                         #print(colored(" Eth type : \n",'yellow'),eth_type)
                         #print(colored(" Eth content : \n",'yellow'),eth)                    
                         
-                    else:
-                        print(colored(" Frame info\n",'yellow'),frame_info)
+                    #else:
+                        #print(colored(" Frame info\n",'yellow'),frame_info)
 
                     # If packet is IPv4, update features
                     if encapsulation_type == "1" and eth_type == "0x00000800":
@@ -217,7 +217,7 @@ def main():
                             outFile[i] = 0
                         file_obj.write('\n')
                         
-                        print("File updated")
+                        #print("File updated")
                         last_ks = (last_ks + 1)
                         last_num_packets = 0
                     
