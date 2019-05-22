@@ -11,18 +11,31 @@
 import numpy as np
 import math as m 
 
-
-window_offset = 0
-window_size = 0
+window_offset = 20
+window_size = 120
 observation = np.array(np.zeros((600,8)))
 
 def observation_analyse(ob_window):
+    print("\nMedia para cada métrica :")
     print(np.mean(ob_window,axis=0))
+    print("\nDesvio padrão para cada métrica :")    
     print(np.std(ob_window, axis=0))
-
-def initialInformation(offset, size):
-    window_offset = offset
-    window_size = size
+    info = []
+    tmpS = 0
+    tmpD = 0
+    for x in ob_window[:,0] :
+        if x==0 and tmpD > 1 :
+            info.append(['Data',tmpD])
+            tmpD = 0
+        elif x == 0 :
+            tmpS += 1
+        elif x != 0 and tmpS > 0 :
+            info.append(['Silence',tmpS])
+            tmpS = 0            
+        elif x != 0 :
+            tmpD += 1
+    print("\n0 - Silence time || 1 - Data time\nInfo : ")
+    print(info)
 
 def readFile(filetoread) :
     file = open(filetoread, "r") 
@@ -36,13 +49,12 @@ def readFile(filetoread) :
         i+=1
     file.close()
 
-initialInformation(40,120)
-readFile("Results/ubuntu_225_tpr_1557940526388.dat")
+readFile("ResultsOwn/arch_matlab6.dat")
 
-num_windows = m.floor((len(observation) -  window_size) / window_offset)
+num_windows = m.ceil((len(observation) -  window_size) / window_offset) +1
 print("Windows's number with a slice strategy : ", num_windows)
 
-for x in range(0,num_windows+1) :
+for x in range(0,num_windows) :
     print("=====================================================================")
     print()
     start = x*window_offset

@@ -24,3 +24,5 @@ hs_err_pid*
 
 dataAcquisition/CapturedPackets_Examples/
 dataAcquisition/Results/
+dataAcquisition/own/
+dataAcquisition/ResultsOwn/
