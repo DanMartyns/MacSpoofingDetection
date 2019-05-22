@@ -8,44 +8,51 @@
 # [5] - IPv4 packets number (from pcs_ip to unknow ips and vice-versa)
 # [6] - Number of TCP SYN flags
 # [7] - Number of TCP FIN flags
+import numpy as np
+import math as m 
 
-window_offset = 60
-window_size = 120
 
+window_offset = 0
+window_size = 0
+observation = np.array(np.zeros((600,8)))
 
-file = open("results1G.txt", "r") 
+def observation_analyse(ob_window):
+    print(np.mean(ob_window,axis=0))
+    print(np.std(ob_window, axis=0))
 
-line = file.readline()
-mean_sum_length = []
-mean_tcp_packets = []
-mean_udp_packets = []
-mean_other_packets = []
-mean_packets_known = []
-mean_packets_unknown = []
-mean_tcp_syn = []
-mean_tcp_fin = []
+def initialInformation(offset, size):
+    window_offset = offset
+    window_size = size
 
-while line:
-    splited = line.split(" ")[:-1]
-    
-    mean_sum_length.append(int(splited[0]))
-    mean_tcp_packets.append(int(splited[1]))
-    mean_udp_packets.append(int(splited[2]))
-    mean_other_packets.append(int(splited[3]))
-    mean_packets_known.append(int(splited[4]))
-    mean_packets_unknown.append(int(splited[5]))
-    mean_tcp_syn.append(int(splited[6]))
-    mean_tcp_fin.append(int(splited[7]))
-    
+def readFile(filetoread) :
+    file = open(filetoread, "r") 
     line = file.readline()
-file.close()
+    i = 0
+    while line:
+        splited = line.split(" ")[:-1]
+        tmp = [int(x) for x in splited]
+        observation[i] = tmp    
+        line = file.readline()
+        i+=1
+    file.close()
 
-num_windows = len(mean_sum_length) // window_offset
-mean = []
-for x in range(0,num_windows) :
+initialInformation(40,120)
+readFile("Results/ubuntu_225_tpr_1557940526388.dat")
+
+num_windows = m.floor((len(observation) -  window_size) / window_offset)
+print("Windows's number with a slice strategy : ", num_windows)
+
+for x in range(0,num_windows+1) :
+    print("=====================================================================")
+    print()
     start = x*window_offset
-    #print("Start : "+str(start))
-    #print("End : "+str(start+window_size))
-    sum_length = sum(mean_sum_length[start:start+window_size])/len(mean_sum_length[start:start+window_size])
-    print("IPv4 packets sum length - Mean for the window %d : %d" %( x , sum_length ))
-    
+    print("Window's Start : "+str(start))
+    print("Window's End : "+str(start+window_size))
+    observation_analyse(observation[start:start+window_size,:])
+    # if observation[start:start+window_size,0] == 0 :
+    #     silenceTimes += 1
+    #print("Number os silence times : %d"%silenceTimes)        
+    print()
+    print("=====================================================================")
+
+
