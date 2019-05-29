@@ -5,6 +5,9 @@ import json
 import time
 from termcolor import colored
 from geoip import geolite2
+import ipaddress
+
+#GEOIP identify from distance if the pc is from inside or outside
 
 def main():
 

@@ -24,7 +24,6 @@ def observation_analyse(ob_window):
     info = []
     tmpS = 0
     tmpD = 0
-    #print("Numero de zeros : %d" %sum(x==0 for x in ob_window[:,0]))
     for x in ob_window[:,0] :
         x = int(x)
         if x==0 and tmpD > 0 :
@@ -59,19 +58,22 @@ def readFile(filetoread) :
         i+=1
     file.close()
 
-readFile("ResultsOwn/arch_matlab6.dat")
+def main() :
+    readFile("ResultsOwn/arch_matlab6.dat")
 
-num_windows = m.ceil((len(observation) -  window_size) / window_offset) +1
-print("Windows's number with a slice strategy : ", num_windows)
+    num_windows = m.ceil((len(observation) -  window_size) / window_offset) +1
+    print("Windows's number with a slice strategy : ", num_windows)
 
-for x in range(0,num_windows) :
-    print("=====================================================================")
-    print()
-    start = x*window_offset
-    print("Window's Start : "+str(start))
-    print("Window's End : "+str(start+window_size))
-    observation_analyse(observation[start:start+window_size,:])       
-    print()
-    print("=====================================================================")
+    for x in range(0,num_windows) :
+        print("=====================================================================")
+        print()
+        start = x*window_offset
+        print("Window's Start : "+str(start))
+        print("Window's End : "+str(start+window_size))
+        observation_analyse(observation[start:start+window_size,:])       
+        print()
+        print("=====================================================================")
 
+if __name__ == '__main__':
+	main()
 
