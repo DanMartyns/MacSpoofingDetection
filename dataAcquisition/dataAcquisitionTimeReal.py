@@ -16,7 +16,9 @@ def processPacket(packet) :
     global num_packets_for_window 
     global T0
     global last_time
-
+    global num_silences
+    global ks
+    global file_obj
 
     # Process packets in file
     try:           
@@ -151,8 +153,6 @@ def processPacket(packet) :
                 else :
                     outFile[5] += 1
             
-            # Update the ks
-            ks=int((float(timestamp)-T0)/interval)
 
             # If is first packet, get the first timestamp
             if packets_amount==0:
@@ -161,33 +161,41 @@ def processPacket(packet) :
             else:
                 # Save the last ks
                 last_ks = ks
+            
+            # Update the ks
+            ks=int((float(timestamp)-T0)/interval)
+
+            if packets_amount == 0 :
+                last_time = timestamp 
 
             tmp = timestamp-last_time 
             num_silences = int(tmp) // interval
-
             
 
             # If the last ks is different from the ks, update the file
             # Clean features and repeat until the last ks is the same
             if last_ks != ks:
+                outF_len = len(outFile)                    
                 # Write in the file output
-                with open(args.output,'wb') as file_obj :  
-                    outF_len = len(outFile)
-                    print(outFile)
-                    file_obj.write(outFile.tobytes())
-                    last_time = timestamp
-                    print(last_time,num_silences)
-                    outFile = np.zeros(8)
-                    last_ks = (last_ks + 1)
-                    last_num_packets = 0
-
-            if packets_amount > 0 :
+                file_obj.write(outFile.tobytes())
+                print("=============================================")
+                print(outFile)
+                last_time = timestamp
+                print("Number of silences")
+                print(num_silences)
                 for x in range(0,num_silences):
-                    #file_obj.write(np.zeros(8).tobytes())
-                    print(np.zeros(8).tobytes())
+                    file_obj.write(np.zeros(8).tobytes())
+                    print(np.zeros(8))
+                num_silences = 0                        
+                outFile = np.zeros(8)
+                last_ks = (last_ks + 1)
+                last_num_packets = 0
+                print("Was just written")
+                print("=============================================")
+                
             # Update the number of packets
             packets_amount += 1
-            num_packets_for_window += 1
+            num_packets_for_window += 1           
 
     except FileNotFoundError:
         print('\nFile not found. Program finished.')
@@ -195,6 +203,7 @@ def processPacket(packet) :
     except Exception as e:
         print(e)
         print('\nCapture reading interrupted.')
+        file_obj.close()
 
 
 def main():
@@ -217,6 +226,8 @@ def main():
 	# [7] - Number of TCP FIN flags
     global outFile
     outFile = np.zeros(8)
+    print("Encode type used by numpy :",outFile.dtype.name)
+    print("Shape of the numpy array :", outFile.shape)
 
     # Timestamp of the first packet
     global T0
@@ -240,6 +251,15 @@ def main():
 
     global num_packets_for_window
     num_packets_for_window = 0
+
+    global num_silences
+    num_silences = 0
+
+    global ks
+    ks = 0
+
+    global file_obj
+    file_obj = open(args.output,'wb')
 
     try:
         capture = pyshark.LiveCapture(interface=interface,bpf_filter='')

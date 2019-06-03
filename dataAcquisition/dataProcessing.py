@@ -43,23 +43,26 @@ def observation_analyse(ob_window):
     print(info)
     print("\nNumero de dados -> %d" %sum(x[0]==1 for x in info))
     print("Numero de silencios -> %d"%sum(x[0]==0 for x in info))
-    print("\nTempo de dados medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 1]))
-    print("\nTempo de silêncio medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 0]))
+    if info != []:
+        print("\nTempo de dados medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 1 ]))
+        print("\nTempo de silêncio medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 0 ] ))
+    else :
+        print("\nThe file was little information")
 
 def readFile(filetoread) :
-    file = open(filetoread, "r") 
-    line = file.readline()
+    file = open(filetoread, "rb") 
+    inFile = file.read(64)
     i = 0
-    while line:
-        splited = line.split(" ")[:-1]
-        tmp = [int(x) for x in splited]
-        observation[i] = tmp    
-        line = file.readline()
-        i+=1
+    while inFile :
+        line = np.frombuffer(inFile, dtype = np.float64).reshape((8,))
+        observation[i] = line          
+        inFile = file.read(64)
+        i += 1
+        print(line)
     file.close()
 
 def main() :
-    readFile("ResultsOwn/arch_matlab6.dat")
+    readFile("resultRealTime.txt")
 
     num_windows = m.ceil((len(observation) -  window_size) / window_offset) +1
     print("Windows's number with a slice strategy : ", num_windows)
