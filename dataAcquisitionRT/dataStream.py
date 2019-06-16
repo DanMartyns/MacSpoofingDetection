@@ -93,9 +93,9 @@ def processPacket(packet) :
                 # If TCP, update features
                 if ipv4_protocol == "6" : 
                     outFile[1] += 1 # Count TCP packets
-                    if tcp_flags_syn != "0":
+                    if tcp_flags_syn != "0" and tcp_flags_syn != None:
                         outFile[6] += int(tcp_flags_syn)
-                    if tcp_flags_fin != "0":
+                    if tcp_flags_fin != "0" and tcp_flags_fin != None:
                         outFile[7] += int(tcp_flags_fin)                         
                 
                 # If UDP, update features
