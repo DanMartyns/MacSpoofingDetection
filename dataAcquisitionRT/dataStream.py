@@ -3,8 +3,21 @@ import argparse
 import pyshark
 import time
 import numpy as np
-from geoip import geolite2
+import pygeoip
+from geopy.distance import geodesic
 from dataProcessingRT import define_observation, observation_analyse
+
+# DETI coordinates
+local_coords = (40.633184, -8.659476)
+
+# GeoIP data
+geoip_data = pygeoip.GeoIP('GeoLiteCity.dat')
+
+# IP address wildcard for the captured machine
+ip_wildcard = '192.168.8.'
+
+# Milisecond offset in initial packet
+timestamp_ms_offset = None
 
 def processPacket(packet) :
     global packets_amount
@@ -30,6 +43,8 @@ def processPacket(packet) :
         eth = packet.eth
         interface_captured = packet.interface_captured             
 
+        if timestamp_ms_offset == None:
+            timestamp_ms_offset = timestamp - int(timestamp)
         # Get layer 1 information
 
         fields = frame_info._all_fields
@@ -94,12 +109,18 @@ def processPacket(packet) :
 
 
                 # If the source ip is known and the destiny ip is known, update feature   
-                match_src = geolite2.lookup(ipv4_src)
-                match_dst = geolite2.lookup(ipv4_dst)
-                if (match_src is not None and match_dst is not None) and (match_src.continent == 'EU' or match_dst.continent == 'EU'): 
-                    outFile[4] += 1
-                else :
-                    outFile[5] += 1
+                other_ip = None
+                if ip_wildcard in ipv4_src:
+                    other_ip = geoip_data.record_by_name(ipv4_dst)
+                elif ip_wildcard in ipv4_dst:
+                    other_ip = geoip_data.record_by_name(ipv4_src)
+                if other_ip != None:
+                    distance = geodesic(local_coords, (other_ip["latitude"], other_ip["longitude"]))
+                    distance = distance._Distance__kilometers
+                    if distance<5500:
+                        outFile[4] += 1
+                    else :
+                        outFile[5] += 1
             
 
             # If is first packet, get the first timestamp
@@ -117,7 +138,7 @@ def processPacket(packet) :
             if packets_amount == 0 :
                 last_time = timestamp 
 
-            tmp = timestamp-last_time 
+            tmp = math.floor(timestamp-timestamp_ms_offset)-math.ceil(last_time-timestamp_ms_offset)
             num_silences = int(tmp) // interval
             
             end_ow = time.time()
