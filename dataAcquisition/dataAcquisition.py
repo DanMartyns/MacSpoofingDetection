@@ -59,7 +59,7 @@ def main():
             # Write in the file output
             f = filename.replace("pcap","dat")
             print("\n>>> Initiate "+filename)
-            file_obj = open(args.outputdirectory+"/"+f,'wb')            
+            file_obj = open(args.outputdirectory+"/"+f,'w')            
             # Process packets in file
             try:
                 cap = pyshark.FileCapture(path+"/"+filename, keep_packets=False)
@@ -221,11 +221,14 @@ def main():
                         # If the last ks is different from the ks, update the file
                         # Clean features and repeat until the last ks is the same
                         if last_ks != ks:
-                            file_obj.write(outFile.tobytes())
-                            outFile = np.zeros(8)
+                            outF_len = len(outFile)
+                            for i in range(outF_len):
+                                file_obj.write(str(int(outFile[i]))+' ')
+                                outFile[i] = 0
+                            file_obj.write('\n')
                             last_time = timestamp
                             for x in range(0,num_silences):
-                                file_obj.write(np.zeros(8).tobytes())
+                                file_obj.write("0 0 0 0 0 0 0 0\n")
                             num_silences = 0                        
                             outFile = np.zeros(8)
                             last_ks = (last_ks + 1)
