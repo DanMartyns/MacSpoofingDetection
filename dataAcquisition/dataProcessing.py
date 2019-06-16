@@ -62,20 +62,25 @@ def observation_analyse(ob_window, file_obj):
         result[21] = statistics.variance([x[1] for x in info if x[0] == 0 ])
         print("\nMatriz de Saída ")
         print(result)
-        file_obj.write(result.tobytes())
+        for r in result:
+            file_obj.write(str(result.tostring) + ' ')
+        file_obj.write("\n")
     else :
         print("\nThe file was little information")
 
 def readFile(filetoread) :
     global observation
 
-    file = open(filetoread, "rb") 
-    inFile = file.read(64)
+    file = open(filetoread, "r") 
+    line = file.readline()
     i = 0
-    while inFile :
-        line = np.frombuffer(inFile, dtype = np.float64).reshape((8,))
-        observation[i] = line          
-        inFile = file.read(64)
+    while line:
+        splitted = line.split(" ")
+        if len(splitted) > 8:
+            splitted = splitted[:-1]
+        tmp = [int(x) for x in splitted]
+        observation[i] = tmp
+        line = file.readline()
         i += 1
         print(line)
         print(i)
@@ -94,17 +99,18 @@ def main() :
     for path, dirs, files in os.walk(args.inputdirectory):
         for filename in files:
             
-            num_arrays = os.path.getsize(path+"/"+filename) // 64
+            num_arrays = os.path.getsize(path+"/"+filename)
             
             global observation
             observation = np.zeros((num_arrays,8))            
             
+            print(filename)
             readFile(path+"/"+filename)
 
             num_windows = m.ceil((len(observation) -  window_size) / window_offset) + 1
             print("Windows's number with a slice strategy : ", num_windows)
 
-            file_obj = open(args.outputdirectory+"/"+filename,"wb")
+            file_obj = open(args.outputdirectory+"/"+filename,"w")
 
             for x in range(0,num_windows) :
                 print("=====================================================================")
