@@ -58,17 +58,32 @@ def observation_analyse(ob_window, file_obj):
             tmpD += 1     
 
     if info != []:
+        tmp_data = [x[1] for x in info if x[0] == 1 ]
+        tmp_silence = [x[1] for x in info if x[0] == 0 ]
+        avg_data = 0
+        var_data = 0
+        avg_silence = 0
+        var_silence = 0
+        if len(tmp_data) > 0:
+            avg_data = statistics.mean(tmp_data)
+            if len(tmp_data) > 1:
+                var_data = statistics.variance([x[1] for x in info if x[0] == 1 ])
+        if len(tmp_silence) > 0:
+            avg_silence = statistics.mean(tmp_silence)
+            if len(tmp_silence) > 1:
+                var_silence = statistics.variance([x[1] for x in info if x[0] == 0 ])
+                
         print("\nNumero de dados -> %d" %sum(x[0]==1 for x in info))
         result[16] = sum(x[0]==1 for x in info)
         print("\nNumero de silencios -> %d"%sum(x[0]==0 for x in info))
         result[17] = sum(x[0]==0 for x in info)
-        print("\nTempo de dados medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 1 ]))
-        result[18] = statistics.mean([x[1] for x in info if x[0] == 1 ])
-        print("\nTempo de silêncio medio : %.2f"%statistics.mean([x[1] for x in info if x[0] == 0 ] ))
-        result[19] = statistics.mean([x[1] for x in info if x[0] == 0 ])
-        print("\nVariância do tempo de dados : %.2f"%statistics.variance([x[1] for x in info if x[0] == 1 ]))
-        result[20] = statistics.variance([x[1] for x in info if x[0] == 1 ])
-        print("\nVariância do tempo de silêncios : %.2f"%statistics.variance([x[1] for x in info if x[0] == 0 ]))
-        result[21] = statistics.variance([x[1] for x in info if x[0] == 0 ])
+        print("\nTempo de dados medio : %.2f"%avg_data)
+        result[18] = avg_data
+        print("\nTempo de silêncio medio : %.2f"%avg_silence)
+        result[19] = avg_silence
+        print("\nVariância do tempo de dados : %.2f"%var_data)
+        result[20] = var_data
+        print("\nVariância do tempo de silêncios : %.2f"%var_silence)
+        result[21] = var_silence
         file_obj.write(result.tobytes())
 
