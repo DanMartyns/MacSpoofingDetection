@@ -3,6 +3,7 @@ import argparse
 import pyshark
 import json
 import time
+import math
 from termcolor import colored
 import pygeoip
 from geopy.distance import geodesic
@@ -63,8 +64,8 @@ def main():
             # Process packets in file
             try:
                 cap = pyshark.FileCapture(path+"/"+filename, keep_packets=False)
-
-                # Iteration throgh packets
+                timestamp_ms_offset = None
+                # Iteration through packets
                 for packet in cap :              
 
                     # Get packet information
@@ -79,6 +80,9 @@ def main():
                     transport_layer = packet.transport_layer
                     eth = packet.eth
                     interface_captured = packet.interface_captured             
+
+                    if timestamp_ms_offset == None:
+                        timestamp_ms_offset = timestamp - int(timestamp)
 
                     # Get layer 1 information
 
@@ -215,7 +219,7 @@ def main():
                         if packets_amount == 0 :
                             last_time = timestamp 
 
-                        tmp = timestamp-last_time 
+                        tmp = math.floor(timestamp-timestamp_ms_offset)-math.ceil(last_time-timestamp_ms_offset)
                         num_silences = int(tmp) // interval
 
                         # If the last ks is different from the ks, update the file
