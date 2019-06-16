@@ -4,14 +4,21 @@ import pyshark
 import json
 import time
 from termcolor import colored
-from geoip import geolite2
+import pygeoip
+from geopy.distance import geodesic
 import ipaddress
 import os
 import numpy as np
 
-#GEOIP identify from distance if the pc is from inside or outside
-
 def main():
+    # DETI coordinates
+    local_coords = (40.633184, -8.659476)
+
+    # GeoIP data
+    geoip_data = pygeoip.GeoIP('GeoLiteCity.dat')
+
+    # IP address wildcard for the captured machine
+    ip_wildcard = '192.168.8.'
 
     # Start time to calculate execution time
     start_time = None
@@ -180,13 +187,19 @@ def main():
                             else: 
                                 outFile[3] += 1 # Count other packets
 
-                            # If the source ip is known and the destiny ip is known, update feature   
-                            match_src = geolite2.lookup(ipv4_src)
-                            match_dst = geolite2.lookup(ipv4_dst)
-                            if (match_src is not None and match_dst is not None) and (match_src.continent == 'EU' or match_dst.continent == 'EU'): 
-                                outFile[4] += 1
-                            else :
-                                outFile[5] += 1
+                            # If the source ip is known and the destiny ip is known, update feature
+                            other_ip = None
+                            if ip_wildcard in ipv4_src:
+                                other_ip = geoip_data.record_by_name(ipv4_dst)
+                            elif ip_wildcard in ipv4_dst:
+                                other_ip = geoip_data.record_by_name(ipv4_src)
+                            if other_ip != None:
+                                distance = geodesic(local_coords, (other_ip["latitude"], other_ip["longitude"]))
+                                distance = distance._Distance__kilometers
+                                if distance<5500:
+                                    outFile[4] += 1
+                                else :
+                                    outFile[5] += 1
                         
                         # If is first packet, get the first timestamp
                         if packets_amount==0:
