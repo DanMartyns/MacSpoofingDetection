@@ -232,7 +232,7 @@ def main():
                             file_obj.write('\n')
                             last_time = timestamp
                             for x in range(0,num_silences):
-                                file_obj.write("0 0 0 0 0 0 0 0\n")
+                                file_obj.write("0 0 0 0 0 0 0 0 \n")
                             num_silences = 0                        
                             outFile = np.zeros(8)
                             last_ks = (last_ks + 1)

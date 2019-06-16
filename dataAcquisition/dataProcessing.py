@@ -78,7 +78,7 @@ def observation_analyse(ob_window, file_obj):
         print("\nMatriz de Saída ")
         print(result)
         for r in result:
-            file_obj.write(str(result.tostring) + ' ')
+            file_obj.write(str(r) + ' ')
         file_obj.write("\n")
     else :
         print("\nThe file was little information")
