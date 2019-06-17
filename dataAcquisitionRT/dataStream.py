@@ -227,7 +227,7 @@ def main():
     ks = 0
 
     global file_obj
-    file_obj = open("afterProcessing.dat",'wb')              
+    file_obj = open("afterProcessing.dat",'w')              
 
     global history
     history = [False, False, False, False, False]
