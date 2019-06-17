@@ -23,14 +23,33 @@ def observation_analyse(ob_window, file_obj):
     info = []
     tmpS = 0
     tmpD = 0
-    print(ob_window)
     
-    print("\nMedia para cada métrica :")
-    print([round(float(x),3) for x in np.mean(ob_window,axis=0)])
-    result[0:8] = [round(float(x),3) for x in np.mean(ob_window,axis=0)]
-    print("\nDesvio padrão para cada métrica :")    
-    print([round(float(x),3) for x in np.std(ob_window, axis=0)])
-    result[8:16] = [round(float(x),3) for x in np.std(ob_window, axis=0)]
+
+    row,column = ob_window.shape
+    join = np.zeros((column,row))
+
+    #Each array is a column
+    for i in range(0,column) :
+        join[i] = ob_window[:,i]
+
+    maxi = np.zeros(column)
+    mini = np.zeros(column)    
+    for i in range(0,column) :
+        maxi[i] = max(join[i])
+        mini[i] = min(join[i])
+    
+    mean = np.zeros(column)
+    std = np.zeros(column)
+    for x in range(0,column):
+        mean[x] = round( (np.mean(join[x]) - mini[x])/(maxi[x]-mini[x]) ,3 ) if np.mean(join[x]) != 0 else 0 
+        std[x] = round( (np.std(join[x]) - mini[x])/(maxi[x]-mini[x]) ,3 ) if np.mean(join[x]) != 0 else 0
+    
+    print("\nMedia para cada métrica :")    
+    print(mean)
+    result[0:8] = mean
+    print("\nDesvio padrão para cada métrica : ")    
+    print(std)
+    result[8:16] = std
 
     for x in ob_window[:,0] :
         x = int(x)
@@ -48,10 +67,14 @@ def observation_analyse(ob_window, file_obj):
             tmpD += 1
     
     #In case of only data or only silences
-    info.append([1,tmpD])
-    info.append([0,tmpS])     
+    if tmpD > 0 :
+        info.append([1,tmpD])
+    elif tmpS > 0:
+        info.append([0,tmpS])     
+  
+    print("\nInfo :")
+    print(info)
 
-    print(info)    
     # Regardless of the time of a sampling window, count how many data jails there are. This gives us the time of data and the time of silence
     tmp_data = [x[1] for x in info if x[0] == 1 ]
     tmp_silence = [x[1] for x in info if x[0] == 0 ]
@@ -70,10 +93,10 @@ def observation_analyse(ob_window, file_obj):
             var_silence = statistics.variance([x[1] for x in info if x[0] == 0 ])
 
     #print("\n( [ Time type , How many consecutive ] ) \n Time Type : 0 - Silence time || 1 - Data time")
-    print("\nNumero de dados -> %d" %sum(x[0]==1 for x in info  if x[1] != 0))
-    result[16] = sum(x[0]==1 for x in info  if x[1] != 0)
-    print("\nNumero de silencios -> %d"%sum(x[0]==0 for x in [x for x in info  if x[1] != 0]))
-    result[17] = sum(x[0]==0 for x in [x for x in info  if x[1] != 0] )
+    print("\nNumero de dados -> %d" %sum(x[0]==1 for x in info))
+    result[16] = sum(x[0]==1 for x in info)
+    print("\nNumero de silencios -> %d"%sum(x[0]==0 for x in info))
+    result[17] = sum(x[0]==0 for x in [x for x in info] )
     print("\nTempo de dados medio : %.2f"%avg_data)
     result[18] = avg_data
     print("\nTempo de silêncio medio : %.2f"%avg_silence)
@@ -128,7 +151,7 @@ def main() :
                 observation_analyse(observation[start:start+window_size,:], file_obj)       
                 print()
                 print("=====================================================================")
-
+        file_obj.close()
 if __name__ == '__main__':
 	main()
 
