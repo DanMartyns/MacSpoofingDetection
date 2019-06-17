@@ -4,6 +4,7 @@ import pyshark
 import time
 import numpy as np
 import pygeoip
+import math
 from geopy.distance import geodesic
 from dataProcessingRT import define_observation, observation_analyse
 
@@ -32,6 +33,10 @@ def processPacket(packet) :
     global start_ow
     global ow
     global file_obj
+    global local_coords
+    global geoip_data
+    global ip_wildcard
+    global timestamp_ms_offset
 
     # Process packets in file
     try:           
@@ -224,6 +229,8 @@ def main():
     global file_obj
     file_obj = open("afterProcessing.dat",'wb')              
 
+    global history
+    history = [False, False, False, False, False]
     try:
         capture = pyshark.LiveCapture(interface=args.interface,bpf_filter='')
         capture.apply_on_packets(processPacket)
