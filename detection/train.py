@@ -1,4 +1,3 @@
-#pickle
 import argparse
 import os
 import math
@@ -7,6 +6,7 @@ import statistics
 import numpy as np
 import pickle
 from sklearn import svm
+from sklearn.preprocessing import StandardScaler
 
 percentage_anomaly = []
 percentage_not = []
@@ -75,7 +75,7 @@ def main():
             anomaly_test_files.append(f)
     
     # begin process of deciding test and train files
-    ratio = 0.20
+    ratio = 0.3
     remove_elems = math.floor(ratio*len(train_files))
   
     assured_files = []
@@ -111,24 +111,28 @@ def main():
 
     # fit
     train_data = readFileToMatrix(train_files)
+    scaler = StandardScaler()
+    scaler.fit(train_data)
+    train_data = scaler.transform(train_data)
     clf = svm.OneClassSVM(gamma='auto', kernel=args.kernel)
-    #normalize?
     clf.fit(train_data)
 
     # predict
     test_data = readFileToMatrix(anomaly_test_files)
+    test_data = scaler.transform(test_data)
     prediction = clf.predict(test_data)
     n_error_a = prediction[prediction == -1].size
     print("Average success anomaly: ", (n_error_a/test_data.shape[0])*100,"%")
 
     test_data = readFileToMatrix(regular_test_files)
+    test_data = scaler.transform(test_data)
     prediction = clf.predict(test_data)
     n_error_r = prediction[prediction == 1].size
     print("Average success regular: ", (n_error_r/test_data.shape[0])*100,"%")
         
     
     #serialize to file
-    file = open("clf_"+ str(int(n_error_a)) + "_" + str(int(n_error_r)) + '.bin',"wb")
+    file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
     pickle.dump(clf, file)
 
 
