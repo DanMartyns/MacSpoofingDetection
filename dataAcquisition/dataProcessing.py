@@ -20,7 +20,6 @@ observation = None
 result = np.zeros(22)
 
 def observation_analyse(ob_window, file_obj):
-
     print("\nMedia para cada métrica :")
     print([float(x) for x in np.mean(ob_window,axis=0)])
     result[0:8] = [float(x) for x in np.mean(ob_window,axis=0)]
@@ -30,7 +29,9 @@ def observation_analyse(ob_window, file_obj):
     info = []
     tmpS = 0
     tmpD = 0
+    # TODO: revise what's going on here
     for x in ob_window[:,0] :
+        #print(x)
         x = int(x)
         if x==0 and tmpD > 0 :
             tmpS += 1
@@ -83,24 +84,12 @@ def observation_analyse(ob_window, file_obj):
     else :
         print("\nThe file was little information")
 
-def readFile(filetoread) :
+def readFile(filetoread):
     global observation
-
-    file = open(filetoread, "r") 
-    line = file.readline()
-    i = 0
-    while line:
-        splitted = line.split(" ")
-        if len(splitted) > 8:
-            splitted = splitted[:-1]
-        tmp = [int(x) for x in splitted]
-        observation[i] = tmp
-        line = file.readline()
-        i += 1
-        print(line)
-        print(i)
-    file.close()
-
+    f = open(filetoread, "r")
+    observation = np.loadtxt(f)
+    f.close()
+    return observation.shape[0]
 def main() :
 
     parser = argparse.ArgumentParser()
@@ -112,17 +101,16 @@ def main() :
     interval = args.samplingInterval
     
     for path, dirs, files in os.walk(args.inputdirectory):
-        for filename in files:
-            
-            num_arrays = os.path.getsize(path+"/"+filename)
-            
-            global observation
-            observation = np.zeros((num_arrays,8))            
-            
+        for filename in files:            
             print(filename)
-            readFile(path+"/"+filename)
 
-            num_windows = m.ceil((len(observation) -  window_size) / window_offset) + 1
+            global observation   
+            sample_size = readFile(path+"/"+filename)
+
+            num_windows = sample_size // window_offset
+            if window_offset < window_size:
+                num_windows -= 1
+ 
             print("Windows's number with a slice strategy : ", num_windows)
 
             file_obj = open(args.outputdirectory+"/"+filename,"w")
