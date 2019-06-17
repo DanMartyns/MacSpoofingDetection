@@ -26,14 +26,13 @@ def observation_analyse(ob_window, file_obj):
     print(ob_window)
     
     print("\nMedia para cada métrica :")
-    print([float(x) for x in np.mean(ob_window,axis=0)])
-    result[0:8] = [float(x) for x in np.mean(ob_window,axis=0)]
+    print([round(float(x),3) for x in np.mean(ob_window,axis=0)])
+    result[0:8] = [round(float(x),3) for x in np.mean(ob_window,axis=0)]
     print("\nDesvio padrão para cada métrica :")    
-    print([float(x) for x in np.std(ob_window, axis=0)])
-    result[8:16] = [float(x) for x in np.std(ob_window, axis=0)]
+    print([round(float(x),3) for x in np.std(ob_window, axis=0)])
+    result[8:16] = [round(float(x),3) for x in np.std(ob_window, axis=0)]
 
     for x in ob_window[:,0] :
-        print(x)
         x = int(x)
         if x==0 and tmpD > 0 :
             tmpS += 1
