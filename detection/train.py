@@ -8,9 +8,6 @@ import pickle
 from sklearn import svm
 from sklearn.preprocessing import StandardScaler
 
-percentage_anomaly = []
-percentage_not = []
-
 # read files and create matrix
 def readFileToMatrix(files):
     f = open(files[0], "r")
@@ -23,18 +20,6 @@ def readFileToMatrix(files):
     array = np.delete(array, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
     return array
 
-#test data
-def predictFile(clf, file, anomaly):
-    array = readFileToMatrix([file])
-    predict = clf.predict(array)
-    if anomaly:
-        n_error = predict[predict == -1].size
-        percentage_anomaly.append((n_error/array.shape[0])*100)
-    else:
-        n_error = predict[predict == 1].size
-        percentage_not.append((n_error/array.shape[0])*100)
-    print((n_error/array.shape[0])*100, "% correct")
-
 #main
 def main():
     parser = argparse.ArgumentParser()
@@ -46,7 +31,7 @@ def main():
     parser.add_argument("-w", "--wildcard", required=True)
     # Assure at least one type of this capture goes to training
     parser.add_argument("-a", "--assure", nargs='+')
-    # DETI room
+    # Kernel config
     parser.add_argument("-k", "--kernel", default="rbf")
     args=parser.parse_args()
 
@@ -129,12 +114,12 @@ def main():
     prediction = clf.predict(test_data)
     n_error_r = prediction[prediction == 1].size
     print("Average success regular: ", (n_error_r/test_data.shape[0])*100,"%")
-        
-    
+            
     #serialize to file
     file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
     pickle.dump(clf, file)
-
+    file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+    pickle.dump(scaler, file)
 
 if __name__ == '__main__':
 	main()
