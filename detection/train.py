@@ -1,4 +1,3 @@
-#pickle
 import argparse
 import os
 import math
@@ -7,57 +6,19 @@ import statistics
 import numpy as np
 import pickle
 from sklearn import svm
-
-percentage_anomaly = []
-percentage_not = []
+from sklearn.preprocessing import StandardScaler
 
 # read files and create matrix
 def readFileToMatrix(files):
-    print(files[0])
     f = open(files[0], "r")
     array = np.loadtxt(f)
-    #print("Current dimensions: ", array.shape)
     if len(files) > 0:
         for f in files[1:]:
-            print(f)
             f = open(f, "r")
             array = np.concatenate((array, np.loadtxt(f)))
-            #print("Current dimensions: ", array.shape)
-    array = np.delete(array, list(range(16,22)), axis=1)
-    array = np.delete(array, 11, axis=1)
-    array = np.delete(array, 8, axis=1)
-    array = np.delete(array, 7, axis=1)
-    array = np.delete(array, 6, axis=1)
-    array = np.delete(array, 3, axis=1)
-    array = np.delete(array, 0, axis=1)
-    #print("Current dimensions: ", array.shape)
+
+    array = np.delete(array, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
     return array
-
-# fit
-def fit(matrix, room):
-    if room == '214':
-        clf = svm.OneClassSVM(gamma='auto', kernel='linear')
-    else:
-        clf = svm.OneClassSVM(gamma='auto', kernel='rbf')
-    return clf.fit(matrix)
-
-# serialize and write to file
-def serializeToFile(result):
-    return 0
-
-#test data
-def predictFile(clf, file, anomaly):
-    print("\nFile ", os.path.basename(file), " anomaly status: ", anomaly)
-    array = readFileToMatrix([file])
-    predict = clf.predict(array)
-    #print(predict)
-    if anomaly:
-        n_error = predict[predict == -1].size
-        percentage_anomaly.append((n_error/array.shape[0])*100)
-    else:
-        n_error = predict[predict == 1].size
-        percentage_not.append((n_error/array.shape[0])*100)
-    print((n_error/array.shape[0])*100, "% correct")
 
 #main
 def main():
@@ -70,8 +31,8 @@ def main():
     parser.add_argument("-w", "--wildcard", required=True)
     # Assure at least one type of this capture goes to training
     parser.add_argument("-a", "--assure", nargs='+')
-    # DETI room
-    parser.add_argument("-r", "--room", required=True)
+    # Kernel config
+    parser.add_argument("-k", "--kernel", default="rbf")
     args=parser.parse_args()
 
     if not (args.files or args.directory):
@@ -89,30 +50,19 @@ def main():
                         args.files.append(os.path.join(r, file))
 
     train_files = []
-    test_files = []    
+    anomaly_test_files = []
+    regular_test_files = []
     # divide filenames in true pc or other
     for f in args.files:
         if args.wildcard in f:
                 train_files.append(f)
         else:
-            test_files.append(f)
+            anomaly_test_files.append(f)
     
-    print("ROOM %s\nAllowed count: %d\nAnomaly count: %d" % (args.room, len(train_files), len(test_files)))
     # begin process of deciding test and train files
-    percentage = len(train_files) / len(test_files)
-    if percentage > 4:
-        ratio = 0.6
-    elif percentage > 0.9:
-        ratio = 0.5
-    elif percentage > 0.75:
-        ratio = 0.4
-    elif percentage > 0.5:
-        ratio = 0.3
-    else:
-        ratio = 0.20
+    ratio = 0.3
     remove_elems = math.floor(ratio*len(train_files))
-    
-    print("Ratio moved for testing: ", ratio)
+  
     assured_files = []
     count_swapped = 0
 
@@ -132,44 +82,44 @@ def main():
                     assured_files.append(elem)
                 for elem in rescued:
                     train_files.remove(elem)
-                    test_files.append(elem)
+                    regular_test_files.append(elem)
                     count_swapped+=1
                    
     if remove_elems - count_swapped > 0:
         random.shuffle(train_files)
         while count_swapped < remove_elems:
             if train_files[0] not in assured_files:
-                test_files.append(train_files.pop(0))
+                regular_test_files.append(train_files.pop(0))
                 count_swapped+=1
             else:
                 random.shuffle(train_files)
 
-    print("\nTrain file count: ", len(train_files))
-    print("Test file count: ", len(test_files))
-    print("\nTrain files: ") 
-    for f in train_files:
-        print(os.path.basename(f))
-    print("\nTest files: ") 
-    for f in test_files:
-        print(os.path.basename(f))
+    # fit
+    train_data = readFileToMatrix(train_files)
+    scaler = StandardScaler()
+    scaler.fit(train_data)
+    train_data = scaler.transform(train_data)
+    clf = svm.OneClassSVM(gamma='auto', kernel=args.kernel)
+    clf.fit(train_data)
 
-    print("\n\n\nStart training...")
-    clf = fit(readFileToMatrix(train_files), args.room)
-    print("Finished training!")
+    # predict
+    test_data = readFileToMatrix(anomaly_test_files)
+    test_data = scaler.transform(test_data)
+    prediction = clf.predict(test_data)
+    n_error_a = prediction[prediction == -1].size
+    print("Average success anomaly: ", (n_error_a/test_data.shape[0])*100,"%")
 
-    #predict
-    print("\n\n\nStart predictions...")
-    for f in test_files:
-        predictFile(clf, f, not args.wildcard in f)
-
-    print("Average success anomaly: ", statistics.mean(percentage_anomaly), "% +- ", statistics.stdev(percentage_anomaly))
-    print("Average success normal: ", statistics.mean(percentage_not), "% +- ", statistics.stdev(percentage_not))
-        
-    
+    test_data = readFileToMatrix(regular_test_files)
+    test_data = scaler.transform(test_data)
+    prediction = clf.predict(test_data)
+    n_error_r = prediction[prediction == 1].size
+    print("Average success regular: ", (n_error_r/test_data.shape[0])*100,"%")
+            
     #serialize to file
-    file = open("clf_"+ args.room + "_" + str(int(statistics.mean(percentage_anomaly))) + "_" + str(int(statistics.mean(percentage_not))),"wb")
+    file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
     pickle.dump(clf, file)
-
+    file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+    pickle.dump(scaler, file)
 
 if __name__ == '__main__':
 	main()
