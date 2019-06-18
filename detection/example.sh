@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 train.py -w deti -r 214 -d features/214
+python3 train.py -w deti -k rbf -d features/214
