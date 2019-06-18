@@ -24,8 +24,9 @@ def observation_analyse(ob_window, file_obj):
     tmpS = 0
     tmpD = 0
     
-
+    # Get the number of rows and columns
     row,column = ob_window.shape
+
     join = np.zeros((column,row))
 
     #Each array is a column
@@ -34,12 +35,17 @@ def observation_analyse(ob_window, file_obj):
 
     maxi = np.zeros(column)
     mini = np.zeros(column)    
+
+    #Find max and min for each metric
     for i in range(0,column) :
         maxi[i] = max(join[i])
         mini[i] = min(join[i])
     
+    # Calculate the mean and variance for each metric
     mean = np.zeros(column)
     std = np.zeros(column)
+
+    #Normalize each result
     for x in range(0,column):
         mean[x] = round( (np.mean(join[x]) - mini[x])/(maxi[x]-mini[x]) ,3 ) if np.mean(join[x]) != 0 else 0 
         std[x] = round( (np.std(join[x]) - mini[x])/(maxi[x]-mini[x]) ,3 ) if np.mean(join[x]) != 0 else 0
@@ -51,6 +57,7 @@ def observation_analyse(ob_window, file_obj):
     print(std)
     result[8:16] = std
 
+    #Find the number of sampling windows with data and with silences
     for x in ob_window[:,0] :
         x = int(x)
         if x==0 and tmpD > 0 :
@@ -83,13 +90,13 @@ def observation_analyse(ob_window, file_obj):
     var_data = 0
     avg_silence = 0
     var_silence = 0
-    if len(tmp_data) > 0:
+    if len(tmp_data) > 0:    
         avg_data = statistics.mean(tmp_data)
         if len(tmp_data) > 1:
             var_data = statistics.variance([x[1] for x in info if x[0] == 1 ])
     if len(tmp_silence) > 0:
         avg_silence = statistics.mean(tmp_silence)
-        if len(tmp_silence) > 1:
+        if len(tmp_silence) > 1:           
             var_silence = statistics.variance([x[1] for x in info if x[0] == 0 ])
 
     #print("\n( [ Time type , How many consecutive ] ) \n Time Type : 0 - Silence time || 1 - Data time")
@@ -98,19 +105,22 @@ def observation_analyse(ob_window, file_obj):
     print("\nNumero de silencios -> %d"%sum(x[0]==0 for x in info))
     result[17] = sum(x[0]==0 for x in [x for x in info] )
     print("\nTempo de dados medio : %.2f"%avg_data)
-    result[18] = avg_data
+    result[18] = round(avg_data,3)
     print("\nTempo de silêncio medio : %.2f"%avg_silence)
-    result[19] = avg_silence
+    result[19] = round(avg_silence,3)
     print("\nVariância do tempo de dados : %.2f"%var_data)
-    result[20] = var_data
+    result[20] = round(var_data,3)
     print("\nVariância do tempo de silêncios : %.2f"%var_silence)
-    result[21] = var_silence
+    result[21] = round(var_silence,3)
     print("\nMatriz de Saída ")
     print(result)
+    
+    # Write the results for this observation window in the file
     for r in result:
         file_obj.write(str(r) + ' ')
     file_obj.write("\n")
 
+# Read the file and put everything in a array of arrays (matrix)
 def readFile(filetoread):
     global observation
     f = open(filetoread, "r")
@@ -119,6 +129,7 @@ def readFile(filetoread):
     return observation.shape[0]
 def main() :
 
+    # It will be possible read an entire directory and process each file
     parser = argparse.ArgumentParser()
     parser.add_argument('-id', '--inputdirectory', required=True, help='input directory - captured .pcap filenames') 
     parser.add_argument('-od', '--outputdirectory', required=True, help='output directory')    
@@ -134,6 +145,7 @@ def main() :
             global observation   
             sample_size = readFile(path+"/"+filename)
 
+            # Calculate the number of observation windows will have the a entire window
             num_windows = sample_size // window_offset
             if window_offset < window_size:
                 num_windows -= 1
@@ -142,6 +154,7 @@ def main() :
 
             file_obj = open(args.outputdirectory+"/"+filename,"w")
 
+            # Slide ( window_offset sampling windows ) the observation window throgh a window
             for x in range(0,num_windows) :
                 print("=====================================================================")
                 print()
