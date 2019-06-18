@@ -25,9 +25,10 @@ def define_observation(array_observationWindow, time_observationWindow, offset_o
         start = x*offset_observationWindow
         print("Window's Start : "+str(start))
         print("Window's End : "+str(start+time_observationWindow))
-        observation_analyse(array_observationWindow[start:start+time_observationWindow,:], file_obj)       
+        result = observation_analyse(array_observationWindow[start:start+time_observationWindow,:], file_obj)       
         print()
         print("=====================================================================")        
+        return result
 
 def observation_analyse(ob_window, file_obj):
     result = np.zeros(22)
@@ -128,7 +129,5 @@ def observation_analyse(ob_window, file_obj):
     print(result)
     
     # Write the results for this observation window in the file
-    for r in result:
-        file_obj.write(str(r) + ' ')
-    file_obj.write("\n")
+    return result
 

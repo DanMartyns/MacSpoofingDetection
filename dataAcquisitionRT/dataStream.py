@@ -7,6 +7,11 @@ import pygeoip
 import math
 from geopy.distance import geodesic
 from dataProcessingRT import define_observation, observation_analyse
+from sklearn import svm
+from sklearn.preprocessing import StandardScaler
+import pickle
+import os
+import datetime
 
 # DETI coordinates
 local_coords = (40.633184, -8.659476)
@@ -19,6 +24,12 @@ ip_wildcard = '192.168.8.'
 
 # Milisecond offset in initial packet
 timestamp_ms_offset = None
+
+# History of decisions
+history = [1,1,1,1,1,1,1,1,1,1]
+
+clf = dict()
+scaler = dict()
 
 def processPacket(packet) :
     global packets_amount
@@ -157,7 +168,8 @@ def processPacket(packet) :
                     observationWindow = np.vstack([observationWindow,np.zeros(8)])
                 #Change to another observation window
                 if end_ow - start_ow >= args.observationWindow :
-                    define_observation(observationWindow, ow, args.windowOffset, file_obj)
+                    result = define_observation(observationWindow, ow, args.windowOffset, file_obj)
+                    classify(result)
                     start_ow = end_ow
                     observationWindow = np.empty(shape=[0, 8])                       
                 num_silences = 0                        
@@ -174,6 +186,26 @@ def processPacket(packet) :
         print(e)
         print('\nCapture reading interrupted.')
         file_obj.close()
+
+def classify(result):
+    global args
+    global history
+    result = result.reshape(1, -1)
+    result = np.delete(result, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
+    data = scaler[args.room].transform(result)
+    classification = clf[args.room].predict(data)
+    history = history[1:10] + [int(classification[0])]
+    if history.count(-1) > 8:
+        print(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), " Anomaly detected!")
+
+def loadFromFiles(files):
+    d = dict()
+    for f in files:
+        file = open(f, 'rb')
+        room = os.path.basename(f).split('_')[1].split('.')[0]
+        d[room] = pickle.load(file)
+    return d
+
 
 def main():
 
@@ -205,6 +237,9 @@ def main():
     parser.add_argument('-si', '--samplingInterval', type=int, help=' time between which measurements are taken, or data is recorded (seconds)', default=1)
     parser.add_argument('-ow', '--observationWindow', required=True, type=int, help = 'time between decision making (seconds)')
     parser.add_argument('-wo', '--windowOffset', required=True, type=int, help = 'how many seconds the observation window drags')
+    parser.add_argument("-c", "--clf", nargs='+', required='True')
+    parser.add_argument("-s", "--scaler", nargs='+', required='True')
+    parser.add_argument("-r", "--room", required='True')
     global args
     args=parser.parse_args()
 
@@ -229,8 +264,10 @@ def main():
     global file_obj
     file_obj = open("afterProcessing.dat",'w')              
 
-    global history
-    history = [False, False, False, False, False]
+    global clf, scaler
+    clf = loadFromFiles(args.clf)
+    scaler = loadFromFiles(args.scaler)
+
     try:
         capture = pyshark.LiveCapture(interface=args.interface,bpf_filter='')
         capture.apply_on_packets(processPacket)
