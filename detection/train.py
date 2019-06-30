@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 from sklearn import svm
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 
 # read files and create matrix
 def readFileToMatrix(files):
@@ -107,19 +108,24 @@ def main():
     test_data = scaler.transform(test_data)
     prediction = clf.predict(test_data)
     n_error_a = prediction[prediction == -1].size
+    y_pred = prediction
+    y_true = np.full(prediction.shape[0], -1)
     print("Average success anomaly: ", (n_error_a/test_data.shape[0])*100,"%")
 
     test_data = readFileToMatrix(regular_test_files)
     test_data = scaler.transform(test_data)
     prediction = clf.predict(test_data)
     n_error_r = prediction[prediction == 1].size
+    y_pred = np.concatenate((y_pred, prediction))
+    y_true = np.concatenate((y_true, np.full(prediction.shape[0], 1)))
     print("Average success regular: ", (n_error_r/test_data.shape[0])*100,"%")
-            
+
+    print("\nConfusion matrix: \n", confusion_matrix(y_true, y_pred))
     #serialize to file
-    file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
-    pickle.dump(clf, file)
-    file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
-    pickle.dump(scaler, file)
+    #file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+    #pickle.dump(clf, file)
+    #file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+    #pickle.dump(scaler, file)
 
 if __name__ == '__main__':
 	main()
