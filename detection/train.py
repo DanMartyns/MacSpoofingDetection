@@ -28,12 +28,16 @@ def predict(files, scaler, clf):
     return clf.predict(scaled_data)
 
 def print_results(anomaly_pred, regular_pred):
-    print("\nAverage success anomaly: ", ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100,"%")
-    print("Average success regular: ", ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100,"%")
+    an = ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100
+    re = ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100
+    print("\nAverage success anomaly: ", an, "%")
+    print("Average success regular: ", re,"%")
 
     y_pred = np.concatenate((anomaly_pred, regular_pred))
     y_true = np.concatenate((np.full(anomaly_pred.shape[0], -1), np.full(regular_pred.shape[0], 1)))
     print("Confusion matrix: \n", confusion_matrix(y_true, y_pred), "\n")
+
+    return (int(an), int(re))
 
 def decide(pred):
     l = []
@@ -149,13 +153,14 @@ def main():
             anomaly_pred = np.concatenate((anomaly_pred, predict(anomaly_test_files, scaler, c).reshape(-1,1)), axis=1)
             regular_pred = np.concatenate((regular_pred, predict(regular_test_files, scaler, c).reshape(-1,1)), axis=1)
         #print_results(predict(anomaly_test_files, scaler, c), predict(regular_test_files, scaler, c))
-    print_results(decide(anomaly_pred), decide(regular_pred))
+    
+    fname = print_results(decide(anomaly_pred), decide(regular_pred))
 
     #serialize to file
     if args.export:
-        file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+        file = open("clf_" + str(fname[0]) + "_" + str(fname[1]) + '.bin',"wb")
         pickle.dump(clf, file)
-        file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+        file = open("scaler_" + str(fname[0]) + "_" + str(fname[1]) + '.bin',"wb")
         pickle.dump(scaler, file)
 
 if __name__ == '__main__':
