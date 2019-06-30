@@ -6,6 +6,7 @@ import statistics
 import numpy as np
 import pickle
 from sklearn import svm
+from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
 
@@ -27,13 +28,23 @@ def predict(files, scaler, clf):
     return clf.predict(scaled_data)
 
 def print_results(anomaly_pred, regular_pred):
-    print("Average success anomaly: ", ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100,"%")
+    print("\nAverage success anomaly: ", ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100,"%")
     print("Average success regular: ", ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100,"%")
 
     y_pred = np.concatenate((anomaly_pred, regular_pred))
     y_true = np.concatenate((np.full(anomaly_pred.shape[0], -1), np.full(regular_pred.shape[0], 1)))
-    print("\nConfusion matrix: \n", confusion_matrix(y_true, y_pred))
-    
+    print("Confusion matrix: \n", confusion_matrix(y_true, y_pred), "\n")
+
+def decide(pred):
+    l = []
+    for i in range(0, pred.shape[0]):
+        col = pred[i,:]
+        if col.tolist().count(-1) > 6:
+            l.append(-1)
+        else:
+            l.append(1)
+    return np.array(l)
+
 #main
 def main():
     parser = argparse.ArgumentParser()
@@ -45,8 +56,6 @@ def main():
     parser.add_argument("-w", "--wildcard", required=True)
     # Assure at least one type of this capture goes to training
     parser.add_argument("-a", "--assure", nargs='+')
-    # Kernel config
-    parser.add_argument("-k", "--kernel", default="rbf")
     # Wants to export files
     parser.add_argument("-e","--export",  action='store_true')
     args=parser.parse_args()
@@ -109,20 +118,38 @@ def main():
                 count_swapped+=1
             else:
                 random.shuffle(train_files)
-
     # fit
     train_data = readFileToMatrix(train_files)
     scaler = StandardScaler()
     scaler.fit(train_data)
     train_data = scaler.transform(train_data)
-    clf = svm.OneClassSVM(gamma='auto', kernel=args.kernel)
-    clf.fit(train_data)
+    clf = []
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='rbf'))
+    clf.append(svm.OneClassSVM(gamma=0.0000001, kernel='rbf'))
+    clf.append(svm.OneClassSVM(gamma=1, kernel='rbf'))
+    clf.append(svm.OneClassSVM(kernel='linear'))
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=1))
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=2))
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=5))
+    clf.append(svm.OneClassSVM(gamma=1, kernel='poly', degree=1))
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='sigmoid'))
+    clf.append(svm.OneClassSVM(gamma=1, kernel='sigmoid'))
+    clf.append(IsolationForest(behaviour='new', max_samples='auto', contamination=0.1))
+    clf.append(IsolationForest(behaviour='new', max_samples=int(train_data.shape[0]/2), contamination=0.2))
 
-    # predict
-    anomaly_pred = predict(anomaly_test_files, scaler, clf)
-    regular_pred = predict(regular_test_files, scaler, clf)
-
-    print_results(anomaly_pred, regular_pred)
+    flag = True
+    for c in clf:
+        c.fit(train_data)
+        # predict
+        if flag:
+            anomaly_pred = predict(anomaly_test_files, scaler, c).reshape(-1,1)
+            regular_pred = predict(regular_test_files, scaler, c).reshape(-1,1)
+            flag = False
+        else:
+            anomaly_pred = np.concatenate((anomaly_pred, predict(anomaly_test_files, scaler, c).reshape(-1,1)), axis=1)
+            regular_pred = np.concatenate((regular_pred, predict(regular_test_files, scaler, c).reshape(-1,1)), axis=1)
+        #print_results(predict(anomaly_test_files, scaler, c), predict(regular_test_files, scaler, c))
+    print_results(decide(anomaly_pred), decide(regular_pred))
 
     #serialize to file
     if args.export:
