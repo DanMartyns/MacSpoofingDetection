@@ -21,6 +21,19 @@ def readFileToMatrix(files):
     array = np.delete(array, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
     return array
 
+def predict(files, scaler, clf):
+    data = readFileToMatrix(files)
+    scaled_data = scaler.transform(data)
+    return clf.predict(scaled_data)
+
+def print_results(anomaly_pred, regular_pred):
+    print("Average success anomaly: ", ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100,"%")
+    print("Average success regular: ", ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100,"%")
+
+    y_pred = np.concatenate((anomaly_pred, regular_pred))
+    y_true = np.concatenate((np.full(anomaly_pred.shape[0], -1), np.full(regular_pred.shape[0], 1)))
+    print("\nConfusion matrix: \n", confusion_matrix(y_true, y_pred))
+    
 #main
 def main():
     parser = argparse.ArgumentParser()
@@ -34,6 +47,8 @@ def main():
     parser.add_argument("-a", "--assure", nargs='+')
     # Kernel config
     parser.add_argument("-k", "--kernel", default="rbf")
+    # Wants to export files
+    parser.add_argument("-e","--export",  action='store_true')
     args=parser.parse_args()
 
     if not (args.files or args.directory):
@@ -104,28 +119,17 @@ def main():
     clf.fit(train_data)
 
     # predict
-    test_data = readFileToMatrix(anomaly_test_files)
-    test_data = scaler.transform(test_data)
-    prediction = clf.predict(test_data)
-    n_error_a = prediction[prediction == -1].size
-    y_pred = prediction
-    y_true = np.full(prediction.shape[0], -1)
-    print("Average success anomaly: ", (n_error_a/test_data.shape[0])*100,"%")
+    anomaly_pred = predict(anomaly_test_files, scaler, clf)
+    regular_pred = predict(regular_test_files, scaler, clf)
 
-    test_data = readFileToMatrix(regular_test_files)
-    test_data = scaler.transform(test_data)
-    prediction = clf.predict(test_data)
-    n_error_r = prediction[prediction == 1].size
-    y_pred = np.concatenate((y_pred, prediction))
-    y_true = np.concatenate((y_true, np.full(prediction.shape[0], 1)))
-    print("Average success regular: ", (n_error_r/test_data.shape[0])*100,"%")
+    print_results(anomaly_pred, regular_pred)
 
-    print("\nConfusion matrix: \n", confusion_matrix(y_true, y_pred))
     #serialize to file
-    #file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
-    #pickle.dump(clf, file)
-    #file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
-    #pickle.dump(scaler, file)
+    if args.export:
+        file = open("clf_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+        pickle.dump(clf, file)
+        file = open("scaler_"+ str(int((n_error_r/test_data.shape[0])*100)) + '.bin',"wb")
+        pickle.dump(scaler, file)
 
 if __name__ == '__main__':
 	main()
