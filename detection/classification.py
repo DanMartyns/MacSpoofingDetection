@@ -45,6 +45,10 @@ def main():
     parser.add_argument("-s", "--scaler", nargs='+', required='True')
     # Room
     parser.add_argument("-r", "--room", required='True')
+    # Prints if anomaly has been found
+    parser.add_argument("-p","--print",  action='store_true')
+    # Print confusion matrix
+    parser.add_argument("-m","--matrix",  action='store_true')
     args=parser.parse_args()
 
     if not (args.files or args.directory):
@@ -65,7 +69,7 @@ def main():
     clf = loadFromFiles(args.clf)
     scaler = loadFromFiles(args.scaler)
 
-
+    matrix_count = [[0,0],[0,0]]
     for f in args.files:
         print("Processing file ", os.path.basename(f))
         data = readFileToMatrix(f)
@@ -78,11 +82,24 @@ def main():
             else:
                 pred = np.concatenate((pred, c.predict(data).reshape(-1,1)), axis=1)
         classification = decide(pred)
-        history = [1,1,1,1]
-        for cl in classification:
-            history = history[1:4] + [cl]
-            if history.count(-1) > 2:
-                print("Anomaly detected!")
+        if args.print:
+            history = [1,1,1,1]
+            for cl in classification:
+                history = history[1:4] + [cl]
+                if history.count(-1) > 2:
+                    print("Anomaly detected!")
+        if args.matrix:
+            if "deti" in f:
+                correct = classification.tolist().count(1)
+                matrix_count[1][1] += correct
+                matrix_count[1][0] += classification.shape[0] - correct
+            else:
+                correct = classification.tolist().count(-1)
+                matrix_count[0][0] += correct
+                matrix_count[0][1] += classification.shape[0] - correct
+            print("Correct samples: ", correct,"/",classification.shape[0])
+    
+    print("\nCONFUSION MATRIX\n", matrix_count[0], "\n", matrix_count[1])
 
 if __name__ == '__main__':
 	main()
