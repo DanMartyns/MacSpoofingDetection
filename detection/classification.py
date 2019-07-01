@@ -23,6 +23,16 @@ def loadFromFiles(files):
         d[room] = pickle.load(file)
     return d
 
+def decide(pred):
+    l = []
+    for i in range(0, pred.shape[0]):
+        col = pred[i,:]
+        if col.tolist().count(-1) > 6:
+            l.append(-1)
+        else:
+            l.append(1)
+    return np.array(l)
+
 def main():
     parser = argparse.ArgumentParser()
     # Read from files
@@ -60,15 +70,19 @@ def main():
         print("Processing file ", os.path.basename(f))
         data = readFileToMatrix(f)
         data = scaler[args.room].transform(data)
-        classification = clf[args.room].predict(data)
-        n_error_a = classification[classification == -1].size
-        history = [1,1,1,1,1,1,1,1,1,1]
+        flag = True
+        for c in clf[args.room]:
+            if flag:
+                pred = c.predict(data).reshape(-1,1)
+                flag = False
+            else:
+                pred = np.concatenate((pred, c.predict(data).reshape(-1,1)), axis=1)
+        classification = decide(pred)
+        history = [1,1,1,1]
         for cl in classification:
-            history = history[1:10] + [cl]
-            if history.count(-1) > 8:
+            history = history[1:4] + [cl]
+            if history.count(-1) > 2:
                 print("Anomaly detected!")
-            #print("Anomaly") if cl<0 else print("Regular")
-        #print("Anomaly chance: ", (n_error_a/data.shape[0])*100,"%\n")
 
 if __name__ == '__main__':
 	main()

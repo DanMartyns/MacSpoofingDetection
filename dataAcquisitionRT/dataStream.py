@@ -26,7 +26,7 @@ ip_wildcard = '192.168.8.'
 timestamp_ms_offset = None
 
 # History of decisions
-history = [1,1,1,1,1,1,1,1,1,1]
+history = [1,1,1,1]
 
 clf = dict()
 scaler = dict()
@@ -193,10 +193,31 @@ def classify(result):
     result = result.reshape(1, -1)
     result = np.delete(result, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
     data = scaler[args.room].transform(result)
-    classification = clf[args.room].predict(data)
-    history = history[1:10] + [int(classification[0])]
-    if history.count(-1) > 8:
+    flag = True
+    for c in clf[args.room]:
+        if flag:
+            pred = c.predict(data).reshape(-1,1)
+            flag = False
+        else:
+            pred = np.concatenate((pred, c.predict(data).reshape(-1,1)), axis=1)
+    classification = decide(pred)
+    history = history[1:4] + [int(classification[0])]
+    if history.count(-1) > 2:
         print(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), " Anomaly detected!")
+    else:
+        print(datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), " No anomalies.")
+    print(pred)
+    print(history)
+    
+def decide(pred):
+    l = []
+    for i in range(0, pred.shape[0]):
+        col = pred[i,:]
+        if col.tolist().count(-1) > 6:
+            l.append(-1)
+        else:
+            l.append(1)
+    return np.array(l)
 
 def loadFromFiles(files):
     d = dict()
@@ -205,7 +226,6 @@ def loadFromFiles(files):
         room = os.path.basename(f).split('_')[1].split('.')[0]
         d[room] = pickle.load(file)
     return d
-
 
 def main():
 
