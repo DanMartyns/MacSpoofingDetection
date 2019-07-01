@@ -213,7 +213,7 @@ def decide(pred):
     l = []
     for i in range(0, pred.shape[0]):
         col = pred[i,:]
-        if col.tolist().count(-1) > 6:
+        if col.tolist().count(-1) > math.ceil(pred.shape[1]/2):
             l.append(-1)
         else:
             l.append(1)
