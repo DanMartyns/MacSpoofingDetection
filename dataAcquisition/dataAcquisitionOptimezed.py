@@ -27,7 +27,7 @@ def main():
     packets_amount = 0
 
     #Number of TCP sessions
-    TCP = []
+    TCP = np.empty(shape=[0, 4], dtype=np.int64)
 
     # Features to be written to the output file
     # [0] - IPv4 packets sum length
@@ -136,12 +136,32 @@ def main():
                                     outFile[6] += int(tcp_flags_syn)
                                 if tcp_flags_fin != "0" and tcp_flags_fin != None:
                                     outFile[7] += int(tcp_flags_fin)
-                                print(TCP)                             
-                                if [ipv4_src,tcp_src_port,ipv4_dst,tcp_dst_port] not in TCP :
-                                    if [ipv4_dst,tcp_dst_port,ipv4_src,tcp_src_port] not in TCP :
-                                        print('IP packet from {} (TCP:{}) to {} (TCP:{}) '.format(IPAddress(ipv4_src),tcp_src_port,IPAddress(ipv4_dst),tcp_dst_port))
-                                        TCP.append([ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port])
-                                        outFile[8] += 1
+                                
+                                #print("============================")
+                                #print("TCP length: %d"%len(TCP))
+                                #print(TCP)
+                                if len(TCP) > 0 :
+                                    #print("Proxima sessao TCP : ")
+                                    #print([ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port])                                    
+                                    for i in range(len(TCP)):
+
+                                        test = np.prod( np.array([ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]) == TCP[i,:])
+                                        testReverse = np.prod( np.array([ipv4_dst,tcp_src_port,ipv4_src,tcp_src_port]) == TCP[i,:])
+
+                                        if test or testReverse:
+                                            #print("Encontrado na lista de Sessoes")
+                                            break
+                                        elif (i >= len(TCP) - 1) and not test and not testReverse:
+                                            #print("Poe no TCP")
+                                            TCP = np.vstack( (TCP, [[ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]]) )
+                                            outFile[8] += 1                                            
+
+                                else :
+                                    #print("TCP vazio, Proxima sessao TCP: ")
+                                    #print([ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port])                             
+                                    TCP = np.vstack( (TCP, [[ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]]) )
+                                    outFile[8] += 1
+                                #print("============================")
                                                             
                             # If UDP, update features
                             elif ipv4_protocol == "17" : 
@@ -185,13 +205,11 @@ def main():
                         # If the last ks is different from the ks, update the file
                         # Clean features and repeat until the last ks is the same
                         if last_ks != ks:
-                            print(outFile[1])
-                            print("TCP size : %d"%len(TCP))
-                            TCP = []                                             
+                            print("muda de janela de amostragem")                                        
                             outF_len = len(outFile)
+                            print(outFile)
                             for i in range(outF_len):
                                 file_obj.write(str(int(outFile[i]))+' ')
-                                #print(outFile[i])
                                 outFile[i] = 0
                             file_obj.write('\n')
                             last_time = timestamp
@@ -201,6 +219,7 @@ def main():
                             outFile = np.zeros(9)
                             last_ks = (last_ks + 1)
                             last_num_packets = 0
+                            TCP = np.empty(shape=[0, 4], dtype=np.int64)
                         
                         # Update the number of packets
                         packets_amount += 1
@@ -228,3 +247,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
