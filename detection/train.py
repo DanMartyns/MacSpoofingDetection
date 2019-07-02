@@ -9,6 +9,9 @@ from sklearn import svm
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.covariance import EllipticEnvelope
+from sklearn.covariance import MinCovDet
 
 # read files and create matrix
 def readFileToMatrix(files):
@@ -62,6 +65,8 @@ def main():
     parser.add_argument("-a", "--assure", nargs='+')
     # Wants to export files
     parser.add_argument("-e","--export",  action='store_true')
+    # Print confusion matrix for each algorithm
+    parser.add_argument("-v","--verbose",  action='store_true')
     args=parser.parse_args()
 
     if not (args.files or args.directory):
@@ -140,6 +145,10 @@ def main():
     clf.append(svm.OneClassSVM(gamma=1, kernel='sigmoid'))
     clf.append(IsolationForest(behaviour='new', max_samples='auto', contamination=0.1))
     clf.append(IsolationForest(behaviour='new', max_samples=int(train_data.shape[0]/2), contamination=0.2))
+    clf.append(LocalOutlierFactor(n_neighbors=20, novelty=True, contamination=0.1))
+    clf.append(LocalOutlierFactor(n_neighbors=20, novelty=True, contamination=0.2))
+    clf.append(EllipticEnvelope(support_fraction=0.7, contamination=0.1))
+    clf.append(EllipticEnvelope(support_fraction=0.7, contamination=0.2))
 
     flag = True
     for c in clf:
@@ -152,7 +161,8 @@ def main():
         else:
             anomaly_pred = np.concatenate((anomaly_pred, predict(anomaly_test_files, scaler, c).reshape(-1,1)), axis=1)
             regular_pred = np.concatenate((regular_pred, predict(regular_test_files, scaler, c).reshape(-1,1)), axis=1)
-        #print_results(predict(anomaly_test_files, scaler, c), predict(regular_test_files, scaler, c))
+        if args.verbose:
+            print_results(predict(anomaly_test_files, scaler, c), predict(regular_test_files, scaler, c))
     
     fname = print_results(decide(anomaly_pred), decide(regular_pred))
 
