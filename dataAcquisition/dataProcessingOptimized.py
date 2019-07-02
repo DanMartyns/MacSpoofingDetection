@@ -17,7 +17,7 @@ import os
 window_offset = 20
 window_size = 120
 observation = None
-result = np.zeros(22)
+result = np.zeros(24)
 
 """
 function that normalizes each row of the matrix x to have unit length.
@@ -38,6 +38,8 @@ def observation_analyse(ob_window, file_obj):
 
     # Get the number of rows and columns
     row,column = ob_window.shape
+    print(row,column)
+
     join = np.zeros((column,row))
     
     #Each array is a column, that is, each array is the data of a metric
@@ -59,10 +61,10 @@ def observation_analyse(ob_window, file_obj):
     
     print("\nMedia para cada métrica :")    
     print(mean)
-    result[0:8] = mean
+    result[0:9] = mean
     print("\nDesvio padrão para cada métrica : ")    
     print(std)
-    result[8:16] = std
+    result[9:18] = std
 
     #Find the number of sampling windows with data and with silences
     for x in ob_window[:,0] :
@@ -105,17 +107,17 @@ def observation_analyse(ob_window, file_obj):
 
     #print("\n( [ Time type , How many consecutive ] ) \n Time Type : 0 - Silence time || 1 - Data time")
     print("\nNumero de dados -> %d" %sum(x[0] for x in info))
-    result[16] = sum(x[0]==1 for x in info)
+    result[18] = sum(x[0]==1 for x in info)
     print("\nNumero de silencios -> %d"%sum(x[1] for x in info))
-    result[17] = sum(x[0]==0 for x in [x for x in info] )
+    result[19] = sum(x[0]==0 for x in [x for x in info] )
     print("\nTempo de dados medio : %.2f"%avg_data)
-    result[18] = avg_data
+    result[20] = avg_data
     print("\nTempo de silêncio medio : %.2f"%avg_silence)
-    result[19] = avg_silence
+    result[21] = avg_silence
     print("\nVariância do tempo de dados : %.2f"%var_data)
-    result[20] = var_data
+    result[22] = var_data
     print("\nVariância do tempo de silêncios : %.2f"%var_silence)
-    result[21] = var_silence
+    result[23] = var_silence
     print("\nMatriz de Saída ")
     print([ round(x,3) for x in result] )
     
@@ -148,7 +150,7 @@ def main() :
 
             global observation   
             sample_size = readFile(path+"/"+filename)
-
+            print(sample_size)
             # Calculate the number of observation windows will have the a entire window
             num_windows = sample_size // window_offset
             if window_offset < window_size:

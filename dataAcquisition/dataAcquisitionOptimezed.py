@@ -214,7 +214,7 @@ def main():
                             file_obj.write('\n')
                             last_time = timestamp
                             for x in range(0,num_silences):
-                                file_obj.write("0 0 0 0 0 0 0 0 \n")
+                                file_obj.write("0 0 0 0 0 0 0 0 0 \n")
                             num_silences = 0                        
                             outFile = np.zeros(9)
                             last_ks = (last_ks + 1)
@@ -234,7 +234,7 @@ def main():
 
             start_time = None
             packets_amount = 0
-            outFile = np.zeros(8)
+            outFile = np.zeros(9)
             last_time = 0     
             num_silences = 0
             t0 = 0
