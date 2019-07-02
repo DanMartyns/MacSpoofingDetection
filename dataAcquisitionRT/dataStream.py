@@ -48,6 +48,7 @@ def processPacket(packet) :
     global geoip_data
     global ip_wildcard
     global timestamp_ms_offset
+    global TCP
 
     # Process packets in file
     try:           
@@ -97,6 +98,8 @@ def processPacket(packet) :
                     tcp_all_fields = tcp_packet._all_fields
 
                     tcp_text = tcp_all_fields.get('')
+                    tcp_src_port = tcp_all_fields.get('tcp.srcport')
+                    tcp_dst_port = tcp_all_fields.get('tcp.dstport')                     
                     tcp_flags_res = tcp_all_fields.get('tcp.flags.res')
                     tcp_flags_fin = tcp_all_fields.get('tcp.flags.fin')
                     tcp_flags_syn = tcp_all_fields.get('tcp.flags.syn')
@@ -113,7 +116,23 @@ def processPacket(packet) :
                         outFile[6] += int(tcp_flags_syn)
                     if tcp_flags_fin != "0" and tcp_flags_fin != None:
                         outFile[7] += int(tcp_flags_fin)                         
-                
+                    
+                    if len(TCP) > 0 :                              
+                        for i in range(len(TCP)):
+
+                            test = np.prod( np.array([ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]) == TCP[i,:])
+                            testReverse = np.prod( np.array([ipv4_dst,tcp_src_port,ipv4_src,tcp_src_port]) == TCP[i,:])
+
+                            if test or testReverse:
+                                break
+                            elif (i >= len(TCP) - 1) and not test and not testReverse:
+                                TCP = np.vstack( (TCP, [[ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]]) )
+                                outFile[8] += 1                                            
+
+                    else :                          
+                        TCP = np.vstack( (TCP, [[ipv4_src,tcp_src_port,ipv4_dst,tcp_src_port]]) )
+                        outFile[8] += 1
+
                 # If UDP, update features
                 elif ipv4_protocol == "17" : 
                     outFile[2] += 1 # Count UDP packets
@@ -165,7 +184,7 @@ def processPacket(packet) :
                 observationWindow = np.vstack([observationWindow,outFile])
                 last_time = timestamp
                 for x in range(0,num_silences):
-                    observationWindow = np.vstack([observationWindow,np.zeros(8)])
+                    observationWindow = np.vstack([observationWindow,np.zeros(9)])
                 #Change to another observation window
                 if end_ow - start_ow >= args.observationWindow :
                     result = define_observation(observationWindow, ow, args.windowOffset, file_obj)
@@ -173,7 +192,7 @@ def processPacket(packet) :
                     start_ow = end_ow
                     observationWindow = np.empty(shape=[0, 8])                       
                 num_silences = 0                        
-                outFile = np.zeros(8)
+                outFile = np.zeros(9)
                 last_ks = (last_ks + 1)
                 
             # Update the number of packets
@@ -235,15 +254,16 @@ def main():
 
     # Features to be written to the output file
     # [0] - IPv4 packets sum length
-    # [1] - Number of TCP packets (IPv4)
-    # [2] - Number of UDP packets (IPv4)
+	# [1] - Number of TCP packets (IPv4)
+	# [2] - Number of UDP packets (IPv4)
     # [3] - Number of other packets
-    # [4] - IPv4 packets number (from pcs_ip to known_ip and vice-versa) 
-    # [5] - IPv4 packets number (from pcs_ip to unknow ips and vice-versa)
+	# [4] - IPv4 packets number (from pcs_ip to known_ip and vice-versa) 
+	# [5] - IPv4 packets number (from pcs_ip to unknow ips and vice-versa)
     # [6] - Number of TCP SYN flags
-    # [7] - Number of TCP FIN flags
+	# [7] - Number of TCP FIN flags
+    # [8] - Number of TCP sessions
     global outFile
-    outFile = np.zeros(8)
+    outFile = np.zeros(9)
 
     # Timestamp of the first packet
     global T0
@@ -273,13 +293,17 @@ def main():
     num_silences = 0
 
     global observationWindow
-    observationWindow = np.empty(shape=[0, 8])
+    observationWindow = np.empty(shape=[0, 9])
 
     global start_ow
     start_ow = time.time()
 
     global ks
     ks = 0
+
+    #TCP sessions
+    global TCP
+    TCP = np.empty(shape=[0, 4], dtype=np.int64)
 
     global file_obj
     file_obj = open("afterProcessing.dat",'w')              
