@@ -210,7 +210,7 @@ def classify(result):
     global args
     global history
     result = result.reshape(1, -1)
-    result = np.delete(result, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
+    result = np.delete(result, [0,3,4,5,6,10,12,13,14,18,20,21,22,23], axis=1)
     data = scaler[args.room].transform(result)
     flag = True
     for c in clf[args.room]:

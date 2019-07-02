@@ -23,7 +23,7 @@ def readFileToMatrix(files):
             f = open(f, "r")
             array = np.concatenate((array, np.loadtxt(f)))
 
-    array = np.delete(array, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
+    array = np.delete(array, [0,3,4,5,6,10,12,13,14,18,20,21,22,23], axis=1)
     return array
 
 def predict(files, scaler, clf):
@@ -68,7 +68,7 @@ def decide(pred, ignore=[]):
     l = []
     for i in range(0, pred.shape[0]):
         col = pred[i,:]
-        if col.tolist().count(-1) > math.ceil(pred.shape[1]/2):
+        if col.tolist().count(-1) > math.ceil(pred.shape[1]*0.4):
             l.append(-1)
         else:
             l.append(1)
@@ -155,22 +155,22 @@ def main():
     scaler.fit(train_data)
     train_data = scaler.transform(train_data)
     clf = []
-    clf.append(svm.OneClassSVM(gamma='auto', kernel='rbf'))
-    clf.append(svm.OneClassSVM(gamma=0.0000001, kernel='rbf'))
-    clf.append(svm.OneClassSVM(gamma=1, kernel='rbf'))
-    clf.append(svm.OneClassSVM(kernel='linear'))
-    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=1))
-    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=2))
-    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=5))
-    clf.append(svm.OneClassSVM(gamma=1, kernel='poly', degree=1))
-    clf.append(svm.OneClassSVM(gamma='auto', kernel='sigmoid'))
-    clf.append(svm.OneClassSVM(gamma=1, kernel='sigmoid'))
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='rbf')) #214
+    clf.append(svm.OneClassSVM(gamma=0.0000001, kernel='rbf')) #214
+    clf.append(svm.OneClassSVM(gamma=1, kernel='rbf')) #104,214
+    clf.append(svm.OneClassSVM(kernel='linear')) #104
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=1)) #104,225
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=2)) #225
+    clf.append(svm.OneClassSVM(gamma='auto', kernel='poly', degree=5)) #104,225
+    clf.append(svm.OneClassSVM(gamma=1, kernel='poly', degree=1)) #104
+    #clf.append(svm.OneClassSVM(gamma='auto', kernel='sigmoid')) #104,214,225
+    clf.append(svm.OneClassSVM(gamma=1, kernel='sigmoid')) #225
     clf.append(IsolationForest(behaviour='new', max_samples='auto', contamination=0.1))
-    clf.append(IsolationForest(behaviour='new', max_samples=int(train_data.shape[0]/2), contamination=0.2))
+    clf.append(IsolationForest(behaviour='new', max_samples=int(train_data.shape[0]/2), contamination=0.2)) #214
     clf.append(LocalOutlierFactor(n_neighbors=20, novelty=True, contamination=0.1))
     clf.append(LocalOutlierFactor(n_neighbors=20, novelty=True, contamination=0.2))
-    clf.append(EllipticEnvelope(support_fraction=0.7, contamination=0.1))
-    clf.append(EllipticEnvelope(support_fraction=0.7, contamination=0.2))
+    clf.append(EllipticEnvelope(support_fraction=0.9, contamination=0.1))
+    clf.append(EllipticEnvelope(support_fraction=0.9, contamination=0.2))
 
     flag = True
     score = []
@@ -196,6 +196,7 @@ def main():
     ignore = remove_algorithms(score)
     print_results(decide(anomaly_pred), decide(regular_pred))
     fname = print_results(decide(anomaly_pred, ignore=ignore), decide(regular_pred, ignore=ignore))
+    print(ignore)
     
     #serialize to file
     if args.export:

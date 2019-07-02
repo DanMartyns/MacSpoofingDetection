@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 def readFileToMatrix(file):
     f = open(file, "r")
     array = np.loadtxt(f)
-    array = np.delete(array, [2,3,6,7,10,11,13,14,15,20,21], axis=1)
+    array = np.delete(array, [0,3,4,5,6,10,12,13,14,18,20,21,22,23], axis=1)
     return array
 
 def loadFromFiles(files):
@@ -88,17 +88,19 @@ def main():
                 history = history[1:4] + [cl]
                 if history.count(-1) > 2:
                     print("Anomaly detected!")
+        
+        if "deti" in f:
+            correct = classification.tolist().count(1)
+            matrix_count[1][1] += correct
+            matrix_count[1][0] += classification.shape[0] - correct
+        else:
+            correct = classification.tolist().count(-1)
+            matrix_count[0][0] += correct
+            matrix_count[0][1] += classification.shape[0] - correct
         if args.matrix:
-            if "deti" in f:
-                correct = classification.tolist().count(1)
-                matrix_count[1][1] += correct
-                matrix_count[1][0] += classification.shape[0] - correct
-            else:
-                correct = classification.tolist().count(-1)
-                matrix_count[0][0] += correct
-                matrix_count[0][1] += classification.shape[0] - correct
             print("Correct samples: ", correct,"/",classification.shape[0])
     
+
     print("\nCONFUSION MATRIX\n", matrix_count[0], "\n", matrix_count[1])
 
 if __name__ == '__main__':

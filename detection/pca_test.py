@@ -16,6 +16,7 @@ def readFileToMatrix(files):
         for f in files[1:]:
             f = open(f, "r")
             array = np.concatenate((array, np.loadtxt(f)))
+    array = np.delete(array, [0,1,2,4,5], axis=1)
     return array
 
 def main():
