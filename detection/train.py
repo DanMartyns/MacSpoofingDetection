@@ -5,6 +5,7 @@ import random
 import statistics
 import numpy as np
 import pickle
+import copy
 from sklearn import svm
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
@@ -35,6 +36,7 @@ def print_results(anomaly_pred, regular_pred):
     re = ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100
     print("\nAverage success anomaly: ", an, "%")
     print("Average success regular: ", re,"%")
+    print("Score: ", int((an+re*1.5)*100/250))
 
     y_pred = np.concatenate((anomaly_pred, regular_pred))
     y_true = np.concatenate((np.full(anomaly_pred.shape[0], -1), np.full(regular_pred.shape[0], 1)))
@@ -42,7 +44,27 @@ def print_results(anomaly_pred, regular_pred):
 
     return (int(an), int(re))
 
-def decide(pred):
+def calc_score(anomaly_pred, regular_pred):
+    an = ((anomaly_pred[anomaly_pred == -1].size)/anomaly_pred.shape[0])*100
+    re = ((regular_pred[regular_pred == 1].size)/regular_pred.shape[0])*100
+    return int((an+re*1.5)*100/250)
+
+def remove_algorithms(score):
+    remv = copy.deepcopy(score)
+    score.sort(reverse=True)
+    median = score[math.floor(len(score)/2)]
+    step = math.floor((score[0] - score[len(score)-1])/len(score))
+    values = []
+
+    for i in range(1, len(score)):
+        if score[i] < median and (math.floor(score[i-1] - score[i]) >= step or median - score[i] > 2*step):
+            values.append(score[i])
+
+    print(len(values))
+    return [i for i, x in enumerate(remv) if x in values]
+
+def decide(pred, ignore=[]):
+    pred = np.delete(pred, ignore, axis=1)
     l = []
     for i in range(0, pred.shape[0]):
         col = pred[i,:]
@@ -151,23 +173,35 @@ def main():
     clf.append(EllipticEnvelope(support_fraction=0.7, contamination=0.2))
 
     flag = True
+    score = []
     for c in clf:
         c.fit(train_data)
         # predict
+        an = predict(anomaly_test_files, scaler, c).reshape(-1,1)
+        re = predict(regular_test_files, scaler, c).reshape(-1,1)
+
         if flag:
-            anomaly_pred = predict(anomaly_test_files, scaler, c).reshape(-1,1)
-            regular_pred = predict(regular_test_files, scaler, c).reshape(-1,1)
+            anomaly_pred = an
+            regular_pred = re
             flag = False
         else:
-            anomaly_pred = np.concatenate((anomaly_pred, predict(anomaly_test_files, scaler, c).reshape(-1,1)), axis=1)
-            regular_pred = np.concatenate((regular_pred, predict(regular_test_files, scaler, c).reshape(-1,1)), axis=1)
+            anomaly_pred = np.concatenate((anomaly_pred, an), axis=1)
+            regular_pred = np.concatenate((regular_pred, re), axis=1)
+        
+        score.append(calc_score(an, re))
+        
         if args.verbose:
             print_results(predict(anomaly_test_files, scaler, c), predict(regular_test_files, scaler, c))
-    
-    fname = print_results(decide(anomaly_pred), decide(regular_pred))
 
+    ignore = remove_algorithms(score)
+    print_results(decide(anomaly_pred), decide(regular_pred))
+    fname = print_results(decide(anomaly_pred, ignore=ignore), decide(regular_pred, ignore=ignore))
+    
     #serialize to file
     if args.export:
+        ignore.reverse()
+        for c in ignore:
+            del clf[c]
         file = open("clf_" + str(fname[0]) + "_" + str(fname[1]) + '.bin',"wb")
         pickle.dump(clf, file)
         file = open("scaler_" + str(fname[0]) + "_" + str(fname[1]) + '.bin',"wb")
