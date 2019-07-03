@@ -8,5 +8,5 @@ a=$#
 for i; 
 do
 	out=${i#data/}
-	python3 dataAcquisition.py -id $i -od results/$out
+	python3 dataAcquisitionOptimezed.py -id $i -od results/$out
 done
