@@ -47,8 +47,6 @@ def main():
     parser.add_argument("-r", "--room", required='True')
     # Prints if anomaly has been found
     parser.add_argument("-p","--print",  action='store_true')
-    # Print confusion matrix
-    parser.add_argument("-m","--matrix",  action='store_true')
     args=parser.parse_args()
 
     if not (args.files or args.directory):
@@ -81,14 +79,7 @@ def main():
                 flag = False
             else:
                 pred = np.concatenate((pred, c.predict(data).reshape(-1,1)), axis=1)
-        classification = decide(pred)
-        if args.print:
-            history = [1,1,1,1]
-            for cl in classification:
-                history = history[1:4] + [cl]
-                if history.count(-1) > 2:
-                    print("Anomaly detected!")
-        
+        classification = decide(pred)        
         if "deti" in f:
             correct = classification.tolist().count(1)
             matrix_count[1][1] += correct
@@ -97,7 +88,12 @@ def main():
             correct = classification.tolist().count(-1)
             matrix_count[0][0] += correct
             matrix_count[0][1] += classification.shape[0] - correct
-        if args.matrix:
+        if args.print:
+            history = [1,1,1,1]
+            for cl in classification:
+                history = history[1:4] + [cl]
+                if history.count(-1) > 2:
+                    print("Anomaly detected!")
             print("Correct samples: ", correct,"/",classification.shape[0])
     
 
