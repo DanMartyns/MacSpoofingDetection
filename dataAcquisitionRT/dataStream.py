@@ -190,7 +190,7 @@ def processPacket(packet) :
                     result = define_observation(observationWindow, ow, args.windowOffset, file_obj)
                     classify(result)
                     start_ow = end_ow
-                    observationWindow = np.empty(shape=[0, 8])                       
+                    observationWindow = np.empty(shape=[0, 9])                       
                 num_silences = 0                        
                 outFile = np.zeros(9)
                 last_ks = (last_ks + 1)
